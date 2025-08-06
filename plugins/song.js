@@ -1,104 +1,52 @@
 const { cmd, commands } = require("../command");
 const yts = require("yt-search");
-const { ytmp3 } = require("@vreden/youtube_scraper");
+const { ytmp3 } = require("@vredden/youtube_scraper");
 
 cmd(
   {
     pattern: "song",
     alias: ["song", "song download"],
-    react: "🎶",
+    react: "🎵",
     desc: "Download Song",
     category: "download",
-    filename: __filename",
+    filename: __filename,
   },
-  async (
-    denu,
-    mek,
-    m,
-    {
-      from,
-      quoted,
-      body,
-      isCmd,
-      command,
-      args,
-      q,
-      isGroup,
-      sender,
-      senderNumber,
-      botNumber2,
-      botNumber,
-      pushname,
-      isMe,
-      isOwner,
-      groupMetadata,
-      groupName,
-      participants,
-      groupAdmins,
-      isBotAdmins,
-      isAdmins,
-      reply,
-    }
-  ) => {
+  async (denu, mek, m, { from, quoted, body }) => {
     try {
-      if (!q) return reply("❌ *Please provide a song name or YouTube link*");
-
-      const search = await yts(q);
-      const data = search.videos[0];
-      const url = data.url;
-
-      let desc = `
-Song downloader
-🎬 *Title:* ${data.title}
-⏱️ *Duration:* ${data.timestamp}
-📅 *Uploaded:* ${data.ago}
-👀 *Views:* ${data.views.toLocaleString()}
-🔗 *Watch Here:* ${data.url}
-`;
-
-      await denu.sendMessage(
-        from,
-        { image: { url: data.thumbnail }, caption: desc },
-        { quoted: mek }
-      );
-
-      const quality = "192";
-      const songData = await ytmp3(url, quality);
-
-      let durationParts = data.timestamp.split(":").map(Number);
-      let totalSeconds =
-        durationParts.length === 3
-          ? durationParts[0] * 3600 + durationParts[1] * 60 + durationParts[2]
-          : durationParts[0] * 60 + durationParts[1];
-
-      if (totalSeconds > 1800) {
-        return reply("⏳ *Sorry, audio files longer than 30 minutes are not supported.*");
+      const query = quoted?.text || body?.trim();
+      if (!query) {
+        return await denu.sendMessage(from, { text: "❌ Please provide a song name." }, { quoted: mek });
       }
 
-      await denu.sendMessage(
-        from,
-        {
-          audio: { url: songData.download.url },
-          mimetype: "audio/mpeg",
-        },
-        { quoted: mek }
-      );
+      const search = await yts(query);
 
-      await denu.sendMessage(
-        from,
-        {
-          document: { url: songData.download.url },
-          mimetype: "audio/mpeg",
-          fileName: `${data.title}.mp3`,
-          caption: "🎶 *Your song is ready to be played!*",
-        },
-        { quoted: mek }
-      );
+      if (!search || !search.videos || search.videos.length === 0) {
+        return await denu.sendMessage(from, { text: "😔 Song not found." }, { quoted: mek });
+      }
 
-      return reply("✅ Thank you");
-    } catch (e) {
-      console.log(e);
-      reply(`❌ *Error:* ${e.message} 😞`);
+      const video = search.videos[0];
+      const title = video?.title?.toString() || "Unknown Title";
+      const url = video?.url;
+
+      await denu.sendMessage(from, { text: 🎶 Downloading: *${title}* }, { quoted: mek });
+
+      const audio = await ytmp3(url);
+
+      if (!audio || !audio?.url) {
+        return await denu.sendMessage(from, { text: "❌ Couldn't fetch audio URL." }, { quoted: mek });
+      }
+
+      await denu.sendMessage(from, {
+        audio: { url: audio.url },
+        mimetype: 'audio/mpeg',
+        fileName: ${title}.mp3,
+      }, { quoted: mek });
+
+    } catch (err) {
+      console.error("❌ SONG COMMAND ERROR:", err);
+      await denu.sendMessage(from, {
+        text: "❌ Error occurred while processing your song request.",
+      }, { quoted: mek });
     }
   }
 );
