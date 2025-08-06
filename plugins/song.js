@@ -9,7 +9,7 @@ cmd(
     react: "🎶",
     desc: "Download Song",
     category: "download",
-    filename: __filename,
+    filename: __filename"
   },
   async (
     denu,
